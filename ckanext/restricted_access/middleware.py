@@ -21,11 +21,13 @@ def get_api_action(environ):
 
 def check_access_ui_path(repoze_who_identity, username, ui_path):
     '''
-    Check a UI action (URI) against a list of actions
-    :param api_user:
-    :param api_action:
-    :return: False if action is restricted and no user, or user not sysadmin, else True
+    Check a UI path (URI) against a list of restricted paths set in the CKAN `.ini` file
+    :param repoze_who_identity:
+    :param username:
+    :param ui_path:
+    :return:
     '''
+    # @TODO: Improve this to handle wildcards such as /user/salsa (without restricting /user/XYZ/edit when required)
     restricted_ui_paths = config.get('ckan.restricted.ui_paths', [])
     if ui_path in restricted_ui_paths:
         if not repoze_who_identity or not username or not authz.is_sysadmin(username):
@@ -40,6 +42,7 @@ def check_access_api_action(api_user, api_action):
     :param api_action:
     :return: False if api_action is restricted and no user, or user not sysadmin, else True
     '''
+    # @TODO: Improve this to handle wildcards such as `harvest_source*`
     restricted_api_actions = config.get('ckan.restricted.api_actions', [])
     if api_action in restricted_api_actions:
         if not api_user or not authz.is_sysadmin(api_user.name):
@@ -58,15 +61,12 @@ class AuthMiddleware(object):
         ui_path = environ.get('PATH_INFO', None)
         username = environ.get('REMOTE_USER', None)
 
-        from pprint import pprint
-        pprint(environ)
-
         if not api_action:
             # Dealing with UI requests
             if not check_access_ui_path(repoze_who_identity, username, ui_path):
                 status = "403 Forbidden"
                 start_response(status, [])
-                return ['Access Forbidden']
+                return ['<h1>Access Forbidden</h1>']
         else:
             # Dealing with API requests
             # if the request is an api action, check against restricted actions
