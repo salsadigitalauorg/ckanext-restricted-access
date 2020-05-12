@@ -28,7 +28,7 @@ def check_access_ui_path(repoze_who_identity, username, ui_path):
     :return:
     '''
     # @TODO: Improve this to handle wildcards such as /user/salsa (without restricting /user/XYZ/edit when required)
-    restricted_ui_paths = config.get('ckan.restricted.ui_paths', [])
+    restricted_ui_paths = config.get('ckan.restricted.ui_paths', []).split()
     if ui_path in restricted_ui_paths:
         print('ui_path %s is in restricted_ui_paths' % ui_path)
         print(restricted_ui_paths)
@@ -45,7 +45,7 @@ def check_access_api_action(api_user, api_action):
     :return: False if api_action is restricted and no user, or user not sysadmin, else True
     '''
     # @TODO: Improve this to handle wildcards such as `harvest_source*`
-    restricted_api_actions = config.get('ckan.restricted.api_actions', [])
+    restricted_api_actions = config.get('ckan.restricted.api_actions', []).split()
     if api_action in restricted_api_actions:
         if not api_user or not authz.is_sysadmin(api_user.name):
             return False
