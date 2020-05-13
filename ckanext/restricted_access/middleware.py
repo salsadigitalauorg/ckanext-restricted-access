@@ -43,7 +43,7 @@ def check_access_api_action(api_user, api_action):
     :return: False if api_action is restricted and no user, or user not sysadmin, else True
     '''
     # @TODO: Improve this to handle wildcards such as `harvest_source*`
-    restricted_api_actions = config.get('ckan.restricted.api_actions', []).split()
+    restricted_api_actions = config.get('ckan.restricted.api_actions', [])
     if api_action in restricted_api_actions:
         if not api_user or not authz.is_sysadmin(api_user.name):
             return False
