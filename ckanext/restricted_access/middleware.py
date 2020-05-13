@@ -30,8 +30,6 @@ def check_access_ui_path(repoze_who_identity, username, ui_path):
     # @TODO: Improve this to handle wildcards such as /user/salsa (without restricting /user/XYZ/edit when required)
     restricted_ui_paths = config.get('ckan.restricted.ui_paths', []).split()
     if ui_path in restricted_ui_paths:
-        print('ui_path %s is in restricted_ui_paths' % ui_path)
-        print(restricted_ui_paths)
         if not repoze_who_identity or not username or not authz.is_sysadmin(username):
             return False
     return True
@@ -68,7 +66,7 @@ class AuthMiddleware(object):
             if not check_access_ui_path(repoze_who_identity, username, ui_path):
                 status = "403 Forbidden"
                 start_response(status, [])
-                return ['<h1>Access Forbidden</h1> ui_path: %s' % ui_path]
+                return ['<h1>Access Forbidden</h1> Path: %s' % ui_path]
         else:
             # Dealing with API requests
             # if the request is an api action, check against restricted actions
