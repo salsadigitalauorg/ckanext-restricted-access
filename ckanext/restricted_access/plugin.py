@@ -1,5 +1,5 @@
 import ckan.plugins as plugins
-import middleware
+import ckanext.restricted_access.middleware as middleware
 
 
 class RestrictedAccessPlugin(plugins.SingletonPlugin):

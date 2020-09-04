@@ -90,7 +90,7 @@ class AuthMiddleware(object):
         if not apikey:
             apikey = environ.get('HTTP_AUTHORIZATION', environ.get('Authorization', None))
         if apikey and ' ' not in apikey:
-            apikey = unicode(apikey)
+            apikey = str(apikey)
             query = model.Session.query(model.User)
             user = query.filter_by(apikey=apikey).first()
             return user
