@@ -2,10 +2,16 @@ import ckan.authz as authz
 import ckan.model as model
 import ckan.plugins.toolkit as toolkit
 import json
+import six
+import ckan.lib.api_token as api_token
+import logging
+
 
 from ckan.common import _, config
 from ckan.lib import base
+from six.moves.urllib.parse import urlparse
 
+log = logging.getLogger(__name__)
 
 def get_api_action(environ):
     '''
@@ -13,10 +19,15 @@ def get_api_action(environ):
     :param environ:
     :return: string of API action, or None
     '''
-    routing_args = environ.get('wsgiorg.routing_args', None)
-
-    if routing_args and routing_args[1] and routing_args[1].get('api_action', None):
-        return routing_args[1].get('api_action')
+    api_action = None
+    parsed = urlparse(environ.get('PATH_INFO', ''))
+    paths = parsed.path.split('/')
+    # api action urls are either /api/action/<action_name> or /api/<version>/action/<action_name>
+    if paths and 'api' in paths and 'action' in paths:
+        # action should always be the last path
+        api_action = paths[len(paths)-1]
+        
+    return api_action
 
 
 def check_access_ui_path(repoze_who_identity, username, ui_path):
@@ -66,7 +77,7 @@ class AuthMiddleware(object):
             if not check_access_ui_path(repoze_who_identity, username, ui_path):
                 status = "403 Forbidden"
                 start_response(status, [])
-                return ['<h1>Access Forbidden</h1> Path: %s' % ui_path]
+                return [f'<h1>Access Forbidden</h1> Path: {ui_path}'.encode('utf8')]
         else:
             # Dealing with API requests
             # if the request is an api action, check against restricted actions
@@ -74,7 +85,7 @@ class AuthMiddleware(object):
                 start_response(200, [
                     ('Content-Type', 'application/json')
                 ])
-                return self.unauthorised_api_response()
+                return [self.unauthorised_api_response().encode('utf8')]
 
         return self.app(environ, start_response)
 
@@ -88,12 +99,22 @@ class AuthMiddleware(object):
                                         base.APIKEY_HEADER_NAME_DEFAULT)
         apikey = environ.get(apikey_header_name, '')
         if not apikey:
-            apikey = environ.get('HTTP_AUTHORIZATION', environ.get('Authorization', None))
-        if apikey and ' ' not in apikey:
-            apikey = str(apikey)
-            query = model.Session.query(model.User)
-            user = query.filter_by(apikey=apikey).first()
-            return user
+            # For misunderstanding old documentation (now fixed).
+            apikey = environ.get(u'HTTP_AUTHORIZATION', u'')
+        if not apikey:
+            apikey = environ.get(u'Authorization', u'')
+            # Forget HTTP Auth credentials (they have spaces).
+            if u' ' in apikey:
+                apikey = u''
+        if not apikey:
+            return None
+        apikey = six.ensure_text(apikey, errors=u"ignore")
+        query = model.Session.query(model.User)
+        user = query.filter_by(apikey=apikey).first()
+
+        if not user:
+            user = api_token.get_user_from_token(apikey)
+        return user
 
     def unauthorised_api_response(self):
         '''
