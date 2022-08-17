@@ -1,8 +1,6 @@
 import json
 import logging
 
-from six.moves.urllib.parse import urlparse
-
 import ckan.authz as authz
 import ckan.plugins.toolkit as toolkit
 
@@ -55,6 +53,13 @@ def ckanext_before_request():
 
     api_action = toolkit.request.view_args.get('logic_function', None)
     username = toolkit.g.user
+
+    redirect_anon_to_login = toolkit.config.get('ckan.restricted.redirect_anon_to_login', False)
+    # The only pages unauthorized users have access to are bellow
+    allowed_endpoints = ["user.login", "static"]
+    if toolkit.asbool(redirect_anon_to_login) and not username:
+        if not toolkit.request.endpoint in allowed_endpoints:
+            return toolkit.redirect_to("user.login")
 
     if api_action:
         # Dealing with API requests
