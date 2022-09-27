@@ -29,6 +29,12 @@ Added the `restricted_access` plugin to your CKAN `.ini` file, e.g.
 Add two new settings to your CKAN `.ini` file:
 
     ckan.restricted.api_actions = harvest_source_list user_autocomplete status_show
-    ckan.restricted.ui_actions = /user
+    ckan.restricted.ui_paths = user.register resource.download
 
-Both are a space separated list of API actions and UI actions that will be restricted to `sysadmin` level users.
+Both are a space separated list of API actions and UI endpoints that will be restricted to `sysadmin` level users.
+
+If you want to close the site for anon users, add this setting to your CKAN `.ini` file:
+
+    ckan.restricted.redirect_anon_to_login = true
+
+The default value is `False`
